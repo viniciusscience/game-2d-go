@@ -24,6 +24,8 @@ type GameScene struct {
 	meteorsForLevel  int
 	velocityTimer    *Timer
 	space            *resolv.Space
+	lasers           map[int]*Laser
+	laserCount       int
 }
 
 func NewGameScene() *GameScene {
@@ -35,8 +37,14 @@ func NewGameScene() *GameScene {
 		meteorCount:      0,
 		meteorsForLevel:  2,
 		space:            resolv.NewSpace(ScreenWidth, ScreenHeight, 16, 16),
+		lasers:           make(map[int]*Laser),
+		laserCount:       0,
 	}
 	g.player = NewPlayer(g)
+	g.laser = NewLaser(Vector{
+		X: 4.2,
+		Y: 4.3,
+	}, 3.3, 2, g)
 	g.space.Add(g.player.playerObj)
 
 	return g
@@ -58,7 +66,7 @@ func (g *GameScene) Update(state *State) error {
 
 func (g *GameScene) Draw(screen *ebiten.Image) {
 	g.player.Draw(screen)
-
+	g.laser.Draw(screen)
 	for _, m := range g.meteoro {
 		m.Draw(screen)
 	}
@@ -93,4 +101,8 @@ func (g *GameScene) isPlayerCollidingWithMeteor() {
 			fmt.Println("Playr collided with meteor", data.index)
 		}
 	}
+}
+
+func (g *GameScene) releaseLaser(screen *ebiten.Image) {
+	g.laser.Draw(screen)
 }
