@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/solarlune/resolv"
 	"github.com/viniciusscience/2d-games/assets"
 )
 
@@ -19,6 +20,7 @@ type Player struct {
 	position        Vector
 	playerVelocity  float64
 	curAcceleration float64
+	playerObj       *resolv.Circle
 }
 
 func NewPlayer(game *GameScene) *Player {
@@ -34,11 +36,18 @@ func NewPlayer(game *GameScene) *Player {
 		Y: ScreenHeight/2 - halfH,
 	}
 
+	//create a resolv object
+	playerObj := resolv.NewCircle(pos.X, pos.Y, float64(sprite.Bounds().Dx()/2))
+
 	p := &Player{
-		sprite:   sprite,
-		game:     game,
-		position: pos,
+		sprite:    sprite,
+		game:      game,
+		position:  pos,
+		playerObj: playerObj,
 	}
+
+	p.playerObj.SetPosition(pos.X, pos.Y)
+	p.playerObj.Tags().Set(TagPlayer)
 
 	return p
 }
@@ -70,6 +79,8 @@ func (p *Player) Update() {
 	}
 
 	p.accelerate()
+
+	p.playerObj.SetPosition(p.position.X, p.position.Y)
 }
 
 func (p *Player) accelerate() {
@@ -96,14 +107,21 @@ func (p *Player) accelerate() {
 func (p *Player) keepOnScreen() {
 	if p.position.X >= float64(ScreenWidth) {
 		p.position.X = 0
+		p.playerObj.SetPosition(0, p.position.Y)
 	}
 	if p.position.X < 0 {
 		p.position.X = ScreenWidth
+		p.playerObj.SetPosition(ScreenWidth, p.position.Y)
+
 	}
 	if p.position.Y >= float64(ScreenHeight) {
 		p.position.Y = 0
+		p.playerObj.SetPosition(p.position.X, 0)
+
 	}
 	if p.position.Y < 0 {
 		p.position.Y = ScreenHeight
+		p.playerObj.SetPosition(p.position.X, ScreenHeight)
+
 	}
 }

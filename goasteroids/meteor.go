@@ -5,6 +5,7 @@ import (
 	"math/rand"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/solarlune/resolv"
 	"github.com/viniciusscience/2d-games/assets"
 )
 
@@ -22,6 +23,7 @@ type Meteor struct {
 	angle         float64
 	RotationSpeed float64
 	sprint        *ebiten.Image
+	meteorObj     *resolv.Circle
 }
 
 func NewMeteor(baseVelocity float64, g *GameScene, index int) *Meteor {
@@ -53,14 +55,22 @@ func NewMeteor(baseVelocity float64, g *GameScene, index int) *Meteor {
 
 	sprinte := assets.MeteorosSprits[rand.Intn(len(assets.MeteorosSprits))]
 
+	// create the collision object
+	meteorObj := resolv.NewCircle(pos.X, pos.Y, float64(sprinte.Bounds().Dx()/2))
+
 	m := &Meteor{
-		game:     g,
-		position: pos,
-		movement: moviment,
-		rotation: rotationSpeedMin + rand.Float64()*(rotationSpeedMax-rotationSpeedMin),
-		sprint:   sprinte,
-		angle:    angle,
+		game:          g,
+		position:      pos,
+		movement:      moviment,
+		RotationSpeed: rotationSpeedMin + rand.Float64()*(rotationSpeedMax-rotationSpeedMin),
+		sprint:        sprinte,
+		angle:         angle,
+		meteorObj:     meteorObj,
 	}
+
+	m.meteorObj.SetPosition(pos.X, pos.Y)
+	m.meteorObj.Tags().Set(TagMeteor | TagLarge)
+	m.meteorObj.SetData(&ObjectData{index: index})
 
 	return m
 }
@@ -74,6 +84,7 @@ func (m *Meteor) Update() {
 	m.rotation += m.RotationSpeed
 
 	m.keepOnScreen()
+	m.meteorObj.SetPosition(m.position.X, m.position.Y)
 
 }
 
@@ -95,14 +106,18 @@ func (m *Meteor) Draw(screen *ebiten.Image) {
 func (m *Meteor) keepOnScreen() {
 	if m.position.X >= float64(ScreenWidth) {
 		m.position.X = 0
+		m.meteorObj.SetPosition(0, m.position.Y)
 	}
 	if m.position.X < 0 {
 		m.position.X = ScreenWidth
+		m.meteorObj.SetPosition(ScreenWidth, m.position.Y)
 	}
 	if m.position.Y >= float64(ScreenHeight) {
 		m.position.Y = 0
+		m.meteorObj.SetPosition(m.position.X, 0)
 	}
 	if m.position.Y < 0 {
 		m.position.Y = ScreenHeight
+		m.meteorObj.SetPosition(m.position.X, ScreenHeight)
 	}
 }
