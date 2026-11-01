@@ -37,6 +37,7 @@ type GameScene struct {
 	playerIsDead         bool
 	audioContext         *audio.Context
 	thrustPlayer         *audio.Player
+	exhaust              *Exhaust
 }
 
 func NewGameScene() *GameScene {
@@ -69,6 +70,7 @@ func NewGameScene() *GameScene {
 
 func (g *GameScene) Update(state *State) error {
 	g.player.Update()
+	g.updateExhaust()
 	g.isPlayerDying()
 	g.isPlayerDead(state)
 
@@ -89,6 +91,12 @@ func (g *GameScene) Update(state *State) error {
 	g.cleanUpMeteorsAndAliens()
 
 	return nil
+}
+
+func (g *GameScene) updateExhaust() {
+	if g.exhaust != nil {
+		g.exhaust.Update()
+	}
 }
 
 func (g *GameScene) isPlayerDying() {
@@ -121,6 +129,10 @@ func (g *GameScene) isPlayerDead(state *State) {
 
 func (g *GameScene) Draw(screen *ebiten.Image) {
 	g.player.Draw(screen)
+
+	if g.exhaust != nil {
+		g.exhaust.Draw(screen)
+	}
 
 	for _, m := range g.meteoro {
 		m.Draw(screen)
