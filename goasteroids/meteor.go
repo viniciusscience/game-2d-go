@@ -102,7 +102,7 @@ func NewSmallMeteor(baseVelocity float64, g *GameScene, index int) *Meteor {
 		Y: normalizeDirection.Y * velocity,
 	}
 
-	sprinte := assets.MeteorosSprits[rand.Intn(len(assets.MeteorosSpritsSmall))]
+	sprinte := assets.MeteorosSpritsSmall[rand.Intn(len(assets.MeteorosSpritsSmall))]
 
 	// create the collision object
 	meteorObj := resolv.NewCircle(pos.X, pos.Y, float64(sprinte.Bounds().Dx()/2))
