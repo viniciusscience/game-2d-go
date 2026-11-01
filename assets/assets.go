@@ -13,6 +13,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
+const SampleRate = 44100
+
 //go:embed *
 var assets embed.FS
 
@@ -26,6 +28,10 @@ var ExplosionSmallSprite = mustLoadImage("images/explosion-small.png")
 var Explosion = createExplosion()
 var ThrustSound = mustLoadOggVorbis("audio/thrust.ogg")
 var ExhaustSprite = mustLoadImage("images/fire.png")
+var LaserOneSound = mustLoadOggVorbis("audio/fire.ogg")
+var LaserTwoSound = mustLoadOggVorbis("audio/fire.ogg")
+var LaserThreeSound = mustLoadOggVorbis("audio/fire.ogg")
+var ExplosionSound = mustLoadOggVorbis("audio/explosion.ogg")
 
 func mustLoadOggVorbis(name string) *vorbis.Stream {
 	f, err := assets.ReadFile(name)
@@ -33,7 +39,7 @@ func mustLoadOggVorbis(name string) *vorbis.Stream {
 		panic(err)
 	}
 
-	stream, err := vorbis.DecodeWithoutResampling(bytes.NewReader(f))
+	stream, err := vorbis.DecodeWithSampleRate(SampleRate, bytes.NewReader(f))
 	if err != nil {
 		panic(err)
 	}

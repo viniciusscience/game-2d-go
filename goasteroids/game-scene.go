@@ -18,6 +18,8 @@ const (
 	cleanUpExplosionTime = 200 * time.Millisecond
 )
 
+var audioContext = audio.NewContext(assets.SampleRate)
+
 type GameScene struct {
 	player               *Player
 	baseVelocity         float64
@@ -38,6 +40,10 @@ type GameScene struct {
 	audioContext         *audio.Context
 	thrustPlayer         *audio.Player
 	exhaust              *Exhaust
+	laserOnePlayer       *audio.Player
+	laserTwoPlayer       *audio.Player
+	laserThreePlayer     *audio.Player
+	explosionPlayer      *audio.Player
 }
 
 func NewGameScene() *GameScene {
@@ -61,10 +67,21 @@ func NewGameScene() *GameScene {
 	g.explosionFrames = assets.Explosion
 
 	// Load Audio.
-	g.audioContext = audio.NewContext(48000)
+	g.audioContext = audioContext
 	thrustPlayer, _ := g.audioContext.NewPlayer(assets.ThrustSound)
 	g.thrustPlayer = thrustPlayer
 
+	laserOnePlayer, _ := g.audioContext.NewPlayer(assets.LaserOneSound)
+	g.laserOnePlayer = laserOnePlayer
+
+	laserTwoPlayer, _ := g.audioContext.NewPlayer(assets.LaserTwoSound)
+	g.laserTwoPlayer = laserTwoPlayer
+
+	laserThreePlayer, _ := g.audioContext.NewPlayer(assets.LaserThreeSound)
+	g.laserThreePlayer = laserThreePlayer
+
+	explosionPlayer, _ := g.audioContext.NewPlayer(assets.ExplosionSound)
+	g.explosionPlayer = explosionPlayer
 	return g
 }
 
@@ -121,7 +138,8 @@ func (g *GameScene) isPlayerDead(state *State) {
 	if g.playerIsDead {
 		g.player.livesRemaining--
 		if g.player.livesRemaining == 0 {
-			state.SceneManager.GoToScene(NewGameScene())
+			g.Reset()
+			state.SceneManager.GoToScene(g)
 		}
 	}
 
@@ -143,6 +161,22 @@ func (g *GameScene) Draw(screen *ebiten.Image) {
 	}
 }
 
+func (g *GameScene) Reset() {
+	g.player = NewPlayer(g)
+	g.meteoro = make(map[int]*Meteor)
+	g.meteorCount = 0
+	g.lasers = make(map[int]*Laser)
+	g.laserCount = 0
+	g.score = 0
+	g.meteorSpawnTimer.Reset()
+	g.baseVelocity = baseMeteorVelocity
+	g.velocityTimer.Reset()
+	g.playerIsDead = false
+	g.exhaust = nil
+	g.space.RemoveAll()
+	g.space.Add(g.player.playerObj)
+}
+
 func (g *GameScene) isMeteorHitByPlayerLaser() {
 	for _, m := range g.meteoro {
 		for _, l := range g.lasers {
@@ -151,12 +185,21 @@ func (g *GameScene) isMeteorHitByPlayerLaser() {
 					//Small meteor
 					m.sprint = g.explosionSmallSprite
 					g.score++
+
+					if !g.explosionPlayer.IsPlaying() {
+						_ = g.explosionPlayer.Rewind()
+						g.explosionPlayer.Play()
+					}
 				} else {
 					oldPos := m.position
 					m.sprint = g.explosionSprite
 
 					g.score++
 
+					if !g.explosionPlayer.IsPlaying() {
+						_ = g.explosionPlayer.Rewind()
+						g.explosionPlayer.Play()
+					}
 					numToSpawn := rand.Intn(numberOfSmallMeteorsFromLargeMeteor)
 
 					for i := 0; i < numToSpawn; i++ {
@@ -200,6 +243,12 @@ func (g *GameScene) isPlayerCollidingWithMeteor() {
 		if m.meteorObj.IsIntersecting(g.player.playerObj) {
 			if !g.player.isShielded {
 				m.game.player.isDying = true
+
+				if !g.explosionPlayer.IsPlaying() {
+					_ = g.explosionPlayer.Rewind()
+					g.explosionPlayer.Play()
+				}
+
 				break
 			} else {
 				// bounce the meteor

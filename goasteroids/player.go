@@ -106,6 +106,8 @@ func (p *Player) Update() {
 	p.accelerate()
 
 	p.isDoneAccelerating()
+	p.reserve()
+	p.isDoneReversing()
 
 	p.updateExhaustSprite()
 
@@ -137,6 +139,29 @@ func (p *Player) fireLasers() {
 				laser := NewLaser(spawnPos, p.rotation, p.game.laserCount, p.game)
 				p.game.lasers[p.game.laserCount] = laser
 				p.game.space.Add(laser.laserObj)
+
+				switch shotsFired {
+				case 1:
+					if !p.game.laserOnePlayer.IsPlaying() {
+						_ = p.game.laserOnePlayer.Rewind()
+						p.game.laserOnePlayer.Play()
+					}
+				case 2:
+					{
+						if !p.game.laserTwoPlayer.IsPlaying() {
+							_ = p.game.laserTwoPlayer.Rewind()
+							p.game.laserTwoPlayer.Play()
+						}
+					}
+				case 3:
+					{
+						if !p.game.laserThreePlayer.IsPlaying() {
+							_ = p.game.laserThreePlayer.Rewind()
+							p.game.laserThreePlayer.Play()
+						}
+					}
+
+				}
 			} else {
 				p.burstCoolDown.Reset()
 				shotsFired = 0
@@ -163,10 +188,10 @@ func (p *Player) accelerate() {
 			p.curAcceleration = 8
 		}
 
-		p.playerVelocity = curAcceleration
+		p.playerVelocity = p.curAcceleration
 
-		dx := math.Sin(p.rotation) * curAcceleration
-		dy := math.Cos(p.rotation) * -curAcceleration
+		dx := math.Sin(p.rotation) * p.curAcceleration
+		dy := math.Cos(p.rotation) * -p.curAcceleration
 
 		// Show exhaust.
 		bounds := p.sprite.Bounds()
@@ -192,6 +217,43 @@ func (p *Player) accelerate() {
 	}
 }
 
+func (p *Player) reserve() {
+	if ebiten.IsKeyPressed(ebiten.KeyDown) {
+		p.keepOnScreen()
+
+		dx := math.Sin(p.rotation) * -3
+		dy := math.Cos(p.rotation) * 3
+
+		bounds := p.sprite.Bounds()
+		halfW := float64(bounds.Dx()) / 2
+		halfH := float64(bounds.Dy()) / 2
+
+		spawnPos := Vector{
+			p.position.X + halfW + math.Sin(p.rotation)*-exhaustSpawnOffset,
+			p.position.Y + halfH + math.Cos(p.rotation)*exhaustSpawnOffset,
+		}
+		p.game.exhaust = NewExhaust(spawnPos, p.rotation+180.0*math.Pi/180)
+		p.position.X += dx
+		p.position.Y += dy
+		p.playerObj.SetPosition(p.position.X, p.position.Y)
+
+		if !p.game.thrustPlayer.IsPlaying() {
+			_ = p.game.thrustPlayer.Rewind()
+			p.game.thrustPlayer.Play()
+		}
+
+	}
+
+}
+
+func (p *Player) isDoneReversing() {
+	if inpututil.IsKeyJustReleased(ebiten.KeyDown) {
+		if p.game.thrustPlayer.IsPlaying() {
+			p.game.thrustPlayer.Pause()
+		}
+	}
+}
+
 func (p *Player) isDoneAccelerating() {
 	if inpututil.IsKeyJustReleased(ebiten.KeyUp) {
 		if p.game.thrustPlayer.IsPlaying() {
@@ -201,7 +263,7 @@ func (p *Player) isDoneAccelerating() {
 }
 
 func (p *Player) updateExhaustSprite() {
-	if !ebiten.IsKeyPressed(ebiten.KeyUp) && p.game.exhaust != nil {
+	if !ebiten.IsKeyPressed(ebiten.KeyUp) && !ebiten.IsKeyPressed(ebiten.KeyDown) && p.game.exhaust != nil {
 		p.game.exhaust = nil
 	}
 }
