@@ -40,7 +40,7 @@ func (s *Star) Update() {
 
 func GenerateStars(n int) []*Star {
 	var stars []*Star
-	for i := 0; i < n; i++ {
+	for range n {
 		stars = append(stars, NewStar())
 	}
 	return stars
