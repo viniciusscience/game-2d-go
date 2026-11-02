@@ -1,11 +1,14 @@
 package goasteroids
 
 import (
+	"fmt"
+	"image/color"
 	"math/rand"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/solarlune/resolv"
 	"github.com/viniciusscience/2d-games/assets"
 )
@@ -52,6 +55,7 @@ type GameScene struct {
 	beatWaitTime         int
 	playBeatOne          bool
 	star                 []*Star
+	currentLevel         int // The current level the player is on
 }
 
 func NewGameScene() *GameScene {
@@ -70,6 +74,7 @@ func NewGameScene() *GameScene {
 		cleanUpTimer:         NewTimer(cleanUpExplosionTime),
 		beatTimer:            NewTimer(2 * time.Second),
 		beatWaitTime:         baseBeatWaitTime,
+		currentLevel:         1,
 	}
 	g.player = NewPlayer(g)
 	g.space.Add(g.player.playerObj)
@@ -190,10 +195,14 @@ func (g *GameScene) isPlayerDead(state *State) {
 			score := g.score
 			livesRemaining := g.player.livesRemaining
 			lifeSlice := g.player.lifeIndicators[:len(g.player.lifeIndicators)-1]
+			stars := g.star
+
 			g.Reset()
+
 			g.player.livesRemaining = livesRemaining
 			g.score = score
 			g.player.lifeIndicators = lifeSlice
+			g.star = stars
 		}
 	}
 
@@ -227,6 +236,56 @@ func (g *GameScene) Draw(screen *ebiten.Image) {
 			x.Draw(screen)
 		}
 	}
+
+	//Update and draw score.
+	textoToDraw := fmt.Sprintf("%06d", g.score)
+	op := &text.DrawOptions{
+		LayoutOptions: text.LayoutOptions{
+			PrimaryAlign: text.AlignCenter,
+		},
+	}
+
+	op.ColorScale.ScaleWithColor(color.White)
+	op.GeoM.Translate(ScreenWidth/2, 40)
+	text.Draw(screen, textoToDraw, &text.GoTextFace{
+		Source: assets.ScoreFont,
+		Size:   24,
+	}, op)
+
+	// update and draw high score
+	if g.score >= highscore {
+		highscore = g.score
+	}
+
+	//Update and high score.
+	textoToDraw = fmt.Sprintf("HIGH SCORE %06d", highscore)
+	op = &text.DrawOptions{
+		LayoutOptions: text.LayoutOptions{
+			PrimaryAlign: text.AlignCenter,
+		},
+	}
+
+	op.ColorScale.ScaleWithColor(color.White)
+	op.GeoM.Translate(ScreenWidth/2, 75)
+	text.Draw(screen, textoToDraw, &text.GoTextFace{
+		Source: assets.ScoreFont,
+		Size:   16,
+	}, op)
+
+	//Update and draw current level.
+	textoToDraw = fmt.Sprintf("LEVEL %d", g.currentLevel)
+	op = &text.DrawOptions{
+		LayoutOptions: text.LayoutOptions{
+			PrimaryAlign: text.AlignCenter,
+		},
+	}
+
+	op.ColorScale.ScaleWithColor(color.White)
+	op.GeoM.Translate(ScreenWidth/2, ScreenHeight-40)
+	text.Draw(screen, textoToDraw, &text.GoTextFace{
+		Source: assets.LevelFont,
+		Size:   16,
+	}, op)
 }
 
 func (g *GameScene) Reset() {

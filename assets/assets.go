@@ -20,6 +20,8 @@ var assets embed.FS
 
 var PlayerSpring = mustLoadImage("images/player.png")
 var TitleFont = mustLoadFontFace("fonts/title.ttf")
+var ScoreFont = mustLoadFontFace("fonts/score.ttf")
+var LevelFont = mustLoadFontFace("fonts/score.ttf")
 var MeteorosSprits = mustLoadImages("images/meteors/*.png")
 var MeteorosSpritsSmall = mustLoadImages("images/meteors-small/*.png")
 var LaserSprite = mustLoadImage("images/laser.png")
