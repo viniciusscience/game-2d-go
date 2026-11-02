@@ -1,0 +1,19 @@
+
+version: '3'
+
+tasks:
+  build-wasm:
+    desc: Compila o jogo Go para WebAssembly
+    env:
+      GOOS: js
+      GOARCH: wasm
+    cmds:
+      - go build -o wasm/goasteroids.wasm .
+
+  serve:
+    desc: Compila e inicia o servidor HTTP
+    deps:
+      - build-wasm
+    dir: wasm
+    cmds:
+      - python -m http.server 4000
