@@ -16,6 +16,7 @@ const (
 	meteorSpeedUpAmount  = 0.1
 	meteorSpeedUpTime    = 1000 * time.Millisecond
 	cleanUpExplosionTime = 200 * time.Millisecond
+	baseBeatWaitTime     = 1600
 )
 
 var audioContext = audio.NewContext(assets.SampleRate)
@@ -44,6 +45,11 @@ type GameScene struct {
 	laserTwoPlayer       *audio.Player
 	laserThreePlayer     *audio.Player
 	explosionPlayer      *audio.Player
+	beatOnePlayer        *audio.Player
+	beatTwoPlayer        *audio.Player
+	beatTimer            *Timer
+	beatWaitTime         int
+	playBeatOne          bool
 }
 
 func NewGameScene() *GameScene {
@@ -60,6 +66,8 @@ func NewGameScene() *GameScene {
 		explosionSprite:      assets.ExplosionSprite,
 		explosionSmallSprite: assets.ExplosionSmallSprite,
 		cleanUpTimer:         NewTimer(cleanUpExplosionTime),
+		beatTimer:            NewTimer(2 * time.Second),
+		beatWaitTime:         baseBeatWaitTime,
 	}
 	g.player = NewPlayer(g)
 	g.space.Add(g.player.playerObj)
@@ -82,6 +90,12 @@ func NewGameScene() *GameScene {
 
 	explosionPlayer, _ := g.audioContext.NewPlayer(assets.ExplosionSound)
 	g.explosionPlayer = explosionPlayer
+
+	beatOnePlayer, _ := g.audioContext.NewPlayer(assets.BeatOneSound)
+	beatTwoPlayer, _ := g.audioContext.NewPlayer(assets.BeatTwoSound)
+	g.beatOnePlayer = beatOnePlayer
+	g.beatTwoPlayer = beatTwoPlayer
+
 	return g
 }
 
@@ -113,6 +127,30 @@ func (g *GameScene) Update(state *State) error {
 func (g *GameScene) updateExhaust() {
 	if g.exhaust != nil {
 		g.exhaust.Update()
+	}
+}
+
+func (g *GameScene) beatSound() {
+	g.beatTimer.Update()
+	if g.beatTimer.IsReady() {
+		if g.playBeatOne {
+			_ = g.beatOnePlayer.Rewind()
+			g.beatOnePlayer.Play()
+			g.beatTimer.Reset()
+		} else {
+			_ = g.beatTwoPlayer.Rewind()
+			g.beatTwoPlayer.Play()
+			g.beatTimer.Reset()
+		}
+		g.playBeatOne = !g.playBeatOne
+
+		// speed up the timer
+		if g.beatWaitTime > 400 {
+			g.beatWaitTime = g.beatWaitTime - 25
+			g.beatTimer = NewTimer(time.Millisecond * time.Duration(g.beatWaitTime))
+
+		}
+
 	}
 }
 
